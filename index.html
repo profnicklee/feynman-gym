@@ -454,8 +454,9 @@
   // ── Config ──────────────────────────────────────────────────────────────────
   async function loadConfig() {
     try {
-      const res = await fetch('./workout-config.json');
+      const res = await fetch('https://profnicklee.github.io/feynman-gym/workout-config.json');
       config = await res.json();
+      console.log('Config loaded:', config);
     } catch (err) {
       showBanner('Failed to load workout config: ' + err.message, 'error');
     }
