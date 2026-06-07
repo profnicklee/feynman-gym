@@ -733,7 +733,6 @@
     const res = await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
       credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ rows })
     });
     return res.json();
