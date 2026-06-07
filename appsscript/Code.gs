@@ -1,16 +1,19 @@
-var SPREADSHEET_ID  = '1-ehCEJFXzGXwGorWREUWYHkUiFPUQLc6iqEzKfNWqak';
-var TAB_NAME        = 'workouts';
-var AUTHORIZED_EMAIL = 'feynman.nicks.agent@gmail.com';
-var ALLOWED_ORIGIN  = 'https://profnicklee.github.io';
+var SPREADSHEET_ID = '1-ehCEJFXzGXwGorWREUWYHkUiFPUQLc6iqEzKfNWqak';
+var TAB_NAME       = 'workouts';
+var SECRET_TOKEN   = 'FEYNMAN_GYM_2026';
 var HEADERS = ['logged_at', 'date', 'workout_name', 'exercise_name', 'variant', 'set_number', 'reps', 'weight_kg', 'notes'];
 
-// Receives: { rows: [{ date, workout_name, exercise_name, variant, set_number, reps, weight_kg, notes }] }
+// Deployment: Execute as Me, Who has access: Anyone
+// "Anyone" is required for CORS to work with token auth — the browser cannot send
+// credentialed cross-origin requests to a "Only myself" web app without session cookies.
+
+// Receives: { token, rows: [{ date, workout_name, exercise_name, variant, set_number, reps, weight_kg, notes }] }
 // Returns:  { success: true, logged: N } or { error: string }
 function doPost(e) {
   try {
-    validateCaller_();
-
     var payload = JSON.parse(e.postData.contents);
+    validateCaller_(payload.token);
+
     var rows = payload.rows;
 
     if (!rows || !Array.isArray(rows) || rows.length === 0) {
@@ -43,7 +46,7 @@ function doPost(e) {
 // Returns: { rows: [{ logged_at, date, workout_name, exercise_name, variant, set_number, reps, weight_kg, notes }] }
 function doGet(e) {
   try {
-    validateCaller_();
+    validateCaller_(e.parameter.token);
 
     var sheet = getOrCreateSheet_();
     var data = sheet.getDataRange().getValues();
@@ -72,20 +75,8 @@ function doGet(e) {
   }
 }
 
-// Handles CORS preflight (OPTIONS). Safari sends this before a credentialed POST
-// with Content-Type: application/json. Returning any 200 response here tells
-// Google's infrastructure to proceed; the actual CORS response headers
-// (Access-Control-Allow-Origin: ALLOWED_ORIGIN, Access-Control-Allow-Credentials: true,
-// Access-Control-Allow-Headers: Content-Type) are added by Apps Script's serving
-// layer for authenticated "Execute as: Me / Only myself" requests.
-// ContentService does not expose setHeader(), so headers cannot be set in script.
-function doOptions(e) {
-  return ContentService.createTextOutput('').setMimeType(ContentService.MimeType.TEXT);
-}
-
-function validateCaller_() {
-  var email = Session.getActiveUser().getEmail();
-  if (email !== AUTHORIZED_EMAIL) {
+function validateCaller_(token) {
+  if (token !== SECRET_TOKEN) {
     throw new Error('Unauthorized');
   }
 }

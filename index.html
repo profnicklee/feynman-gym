@@ -409,6 +409,7 @@
 <script>
   // ── CONFIGURE THIS after deploying the Apps Script Web App ──────────────────
   const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxkz5cLcoCKvtm4dimqIEGqwnsxxaUPJUBhwGIvL9VJj5WbtmzecacHgQvLA6mxjTF3Og/exec';
+  const SECRET_TOKEN    = 'FEYNMAN_GYM_2026';
   // ────────────────────────────────────────────────────────────────────────────
 
   let config  = null;
@@ -467,9 +468,9 @@
       return;
     }
     try {
-      const res = await fetch(APPS_SCRIPT_URL, { credentials: 'include' });
+      const res = await fetch(`${APPS_SCRIPT_URL}?token=${SECRET_TOKEN}`);
       if (!res.ok) {
-        showBanner('History load failed — make sure you are signed into the FEYNMAN Google account.', 'error');
+        showBanner('History load failed — check the Apps Script URL and token.', 'error');
         return;
       }
       const data = await res.json();
@@ -732,8 +733,7 @@
     }
     const res = await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
-      credentials: 'include',
-      body: JSON.stringify({ rows })
+      body: JSON.stringify({ token: SECRET_TOKEN, rows })
     });
     return res.json();
   }
