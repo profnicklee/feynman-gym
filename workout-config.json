@@ -1,0 +1,78 @@
+{
+  "workouts": {
+    "Leg Day": {
+      "exercises": [
+        {
+          "name": "Hack Squat",
+          "sets": 3,
+          "rep_range": [6, 8],
+          "variants": ["Hack Squat Machine", "Safety Bar Squat", "Barbell Full Squat"]
+        },
+        {
+          "name": "Romanian Deadlift",
+          "sets": 3,
+          "rep_range": [8, 8],
+          "variants": ["Barbell RDL", "Dumbbell RDL", "Single-leg Dumbbell RDL"]
+        },
+        {
+          "name": "Seated Leg Curl",
+          "sets": 2,
+          "rep_range": [10, 12],
+          "variants": ["Seated Machine", "Lying Machine", "Nordic Curl"]
+        },
+        {
+          "name": "Leg Press",
+          "sets": 2,
+          "rep_range": [10, 10],
+          "variants": ["Standard", "Wide Stance", "Single Leg"]
+        },
+        {
+          "name": "Seated Calf Raise",
+          "sets": 2,
+          "rep_range": [12, 15],
+          "variants": ["Seated Machine", "Leg Press Calf Raise", "Single Leg Seated"]
+        }
+      ]
+    },
+    "Push/Pull 1": {
+      "exercises": [
+        {
+          "name": "Machine Chest Press",
+          "sets": 3,
+          "rep_range": [6, 8],
+          "variants": ["Seated Machine", "Dumbbell Press", "Cable Chest Press"]
+        },
+        {
+          "name": "Seated Row",
+          "sets": 3,
+          "rep_range": [8, 10],
+          "variants": ["Seated Machine", "Dumbbell Single Arm Row", "Cable Seated Row"]
+        },
+        {
+          "name": "Machine Shoulder Press",
+          "sets": 3,
+          "rep_range": [8, 10],
+          "variants": ["Seated Machine", "Dumbbell Seated Press", "Arnold Press"]
+        },
+        {
+          "name": "Lat Pulldown",
+          "sets": 3,
+          "rep_range": [8, 10],
+          "variants": ["Wide Grip", "Close Grip", "Single Arm Dumbbell"]
+        },
+        {
+          "name": "Rope Triceps Pressdown",
+          "sets": 2,
+          "rep_range": [8, 10],
+          "variants": ["Rope", "Straight Bar", "Dumbbell Overhead Extension"]
+        },
+        {
+          "name": "Face Pull",
+          "sets": 2,
+          "rep_range": [8, 10],
+          "variants": ["Rope Face Pull", "Rope High Pull", "Dumbbell Rear Delt Fly"]
+        }
+      ]
+    }
+  }
+}

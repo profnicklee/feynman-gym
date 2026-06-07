@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>Feynman Gym</title>
+  <style>
+    /* ── Variables ───────────────────────────────────────────────────────────── */
+    :root {
+      --bg:           #ffffff;
+      --surface:      #f4f4f5;
+      --border:       #e4e4e7;
+      --text:         #18181b;
+      --muted:        #71717a;
+      --accent:       #2563eb;
+      --accent-fg:    #ffffff;
+      --success:      #16a34a;
+      --warn-bg:      #fefce8;
+      --warn-border:  #fde047;
+      --error-bg:     #fef2f2;
+      --error-border: #fca5a5;
+      --radius:       12px;
+      --radius-sm:    8px;
+      --tab-h:        52px;
+    }
+
+    /* ── Reset ────────────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    button { font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    input, select { font: inherit; }
+    html, body {
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 16px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── App shell ────────────────────────────────────────────────────────────── */
+    #app {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Banner ───────────────────────────────────────────────────────────────── */
+    #banner {
+      display: none;
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    #banner.banner-warn  { background: var(--warn-bg);  border-bottom: 1px solid var(--warn-border);  color: #854d0e; }
+    #banner.banner-error { background: var(--error-bg); border-bottom: 1px solid var(--error-border); color: #991b1b; }
+
+    /* ── Tabs ─────────────────────────────────────────────────────────────────── */
+    .tab-bar {
+      display: flex;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+    .tab {
+      flex: 1;
+      height: var(--tab-h);
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      background: none;
+      color: var(--muted);
+      border-bottom: 2px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    /* ── Pages ────────────────────────────────────────────────────────────────── */
+    .page { display: none; padding: 16px; flex: 1; }
+    .page.active { display: block; }
+
+    /* ── Log page controls ────────────────────────────────────────────────────── */
+    .log-controls {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .date-input, .workout-select {
+      flex: 1;
+      height: 48px;
+      padding: 0 12px;
+      font-size: 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg);
+      color: var(--text);
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .workout-select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 32px;
+    }
+
+    /* ── Exercise card ────────────────────────────────────────────────────────── */
+    .exercise-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 12px 16px 10px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .card-title {
+      font-size: 17px;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+    .card-meta {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+    .card-sugg {
+      font-size: 13px;
+      font-weight: 500;
+      margin-top: 4px;
+    }
+    .card-sugg.sugg-progress { color: var(--success); }
+    .card-sugg.sugg-same     { color: var(--accent); }
+    .card-sugg.sugg-none     { color: var(--muted); }
+
+    /* ── Card body ────────────────────────────────────────────────────────────── */
+    .card-body { padding: 12px 16px 0; }
+
+    .card-options {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .variant-select {
+      flex: 1;
+      min-width: 0;
+      height: 44px;
+      padding: 0 32px 0 10px;
+      font-size: 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg);
+      color: var(--text);
+      -webkit-appearance: none;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .unit-toggle {
+      display: flex;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .unit-btn {
+      height: 44px;
+      width: 46px;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      background: none;
+      color: var(--muted);
+      transition: background 0.12s, color 0.12s;
+    }
+    .unit-btn.active { background: var(--accent); color: var(--accent-fg); }
+    .unit-btn:not(.active):active { background: var(--surface); }
+
+    /* Set column labels */
+    .set-labels {
+      display: grid;
+      grid-template-columns: 28px 1fr 1fr 44px;
+      gap: 6px;
+      padding: 0 0 4px;
+    }
+    .set-labels span {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    /* Set rows */
+    .set-rows { display: flex; flex-direction: column; gap: 6px; }
+    .set-row {
+      display: grid;
+      grid-template-columns: 28px 1fr 1fr 44px;
+      gap: 6px;
+      align-items: center;
+    }
+    .set-num {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--muted);
+      text-align: center;
+    }
+    .set-row input[type="number"] {
+      height: 44px;
+      padding: 0 8px;
+      font-size: 17px;
+      text-align: center;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg);
+      color: var(--text);
+      width: 100%;
+      -webkit-appearance: none;
+      -moz-appearance: textfield;
+    }
+    .set-row input[type="number"]:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .set-row input::-webkit-inner-spin-button,
+    .set-row input::-webkit-outer-spin-button { -webkit-appearance: none; }
+    .btn-remove-set {
+      height: 44px;
+      width: 44px;
+      font-size: 20px;
+      line-height: 1;
+      border: none;
+      background: none;
+      color: var(--muted);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-remove-set:active { background: var(--surface); }
+
+    /* ── Card footer ──────────────────────────────────────────────────────────── */
+    .card-footer {
+      padding: 10px 16px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .btn-add-set {
+      align-self: flex-start;
+      height: 36px;
+      padding: 0 12px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+      background: none;
+      border: 1px dashed var(--border);
+      border-radius: var(--radius-sm);
+    }
+    .btn-add-set:active { background: var(--surface); }
+    .notes-input {
+      height: 44px;
+      padding: 0 12px;
+      font-size: 15px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg);
+      color: var(--text);
+    }
+    .notes-input::placeholder { color: var(--muted); }
+    .notes-input:focus { outline: none; border-color: var(--accent); }
+    .btn-log {
+      height: 52px;
+      font-size: 16px;
+      font-weight: 700;
+      background: var(--accent);
+      color: var(--accent-fg);
+      border: none;
+      border-radius: var(--radius);
+      transition: opacity 0.15s;
+    }
+    .btn-log:disabled { opacity: 0.5; }
+    .btn-log:not(:disabled):active { opacity: 0.85; }
+    .save-confirm {
+      display: none;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--success);
+      padding: 2px 0;
+    }
+    .save-confirm.visible { display: block; }
+
+    /* ── Dashboard ────────────────────────────────────────────────────────────── */
+    .dash-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+    .dash-card-header {
+      padding: 12px 16px 8px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .dash-title {
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .dash-subtitle {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+    .dash-empty {
+      padding: 16px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+    .dash-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border-top: 1px solid var(--border);
+    }
+    .stat {
+      padding: 10px 10px 8px;
+      background: var(--bg);
+    }
+    .stat-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      margin-bottom: 3px;
+    }
+    .stat-value {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.3;
+      word-break: break-all;
+    }
+    .stat-date {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .dash-charts {
+      padding: 12px 16px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .chart-wrap { width: 100%; }
+    .chart-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    canvas { display: block; width: 100%; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div id="banner"></div>
+
+  <nav class="tab-bar">
+    <button class="tab active" data-tab="log">Log</button>
+    <button class="tab" data-tab="dashboard">Dashboard</button>
+  </nav>
+
+  <!-- Log page -->
+  <section id="page-log" class="page active">
+    <div class="log-controls">
+      <input type="date" id="workout-date" class="date-input">
+      <select id="workout-select" class="workout-select">
+        <option value="">Select workout…</option>
+      </select>
+    </div>
+    <div id="exercises-container"></div>
+  </section>
+
+  <!-- Dashboard page -->
+  <section id="page-dashboard" class="page">
+    <div id="dashboard-container"></div>
+  </section>
+</div>
+
+<script>
+  // ── CONFIGURE THIS after deploying the Apps Script Web App ──────────────────
+  const APPS_SCRIPT_URL = 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE';
+  // ────────────────────────────────────────────────────────────────────────────
+
+  let config  = null;
+  let history = [];
+
+  // ── Init ────────────────────────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', init);
+
+  async function init() {
+    setTodayDate();
+    setupTabs();
+    await Promise.all([loadConfig(), loadHistory()]);
+    populateWorkoutSelector();
+    renderDashboard();
+  }
+
+  // ── Tabs ────────────────────────────────────────────────────────────────────
+  function setupTabs() {
+    document.querySelectorAll('.tab').forEach(btn => {
+      btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    });
+  }
+
+  function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === 'page-' + tab));
+    if (tab === 'dashboard') renderDashboard();
+  }
+
+  // ── Date ────────────────────────────────────────────────────────────────────
+  function setTodayDate() {
+    document.getElementById('workout-date').value = todayISO();
+  }
+
+  function todayISO() {
+    const d = new Date();
+    return [d.getFullYear(), pad(d.getMonth() + 1), pad(d.getDate())].join('-');
+  }
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  // ── Config ──────────────────────────────────────────────────────────────────
+  async function loadConfig() {
+    try {
+      const res = await fetch('./workout-config.json');
+      config = await res.json();
+    } catch (err) {
+      showBanner('Failed to load workout config: ' + err.message, 'error');
+    }
+  }
+
+  // ── History ─────────────────────────────────────────────────────────────────
+  async function loadHistory() {
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.startsWith('YOUR_')) {
+      showBanner('Paste your Apps Script URL into APPS_SCRIPT_URL in index.html to enable sync.', 'warn');
+      return;
+    }
+    try {
+      const res = await fetch(APPS_SCRIPT_URL, { credentials: 'include' });
+      if (!res.ok) {
+        showBanner('History load failed — make sure you are signed into the FEYNMAN Google account.', 'error');
+        return;
+      }
+      const data = await res.json();
+      if (data.error) { showBanner(data.error, 'error'); return; }
+      history = (data.rows || []).map(normaliseRow);
+    } catch (err) {
+      showBanner('Could not reach Apps Script: ' + err.message, 'error');
+    }
+  }
+
+  function normaliseRow(r) {
+    return {
+      logged_at:     String(r.logged_at || ''),
+      date:          String(r.date || ''),
+      workout_name:  String(r.workout_name || ''),
+      exercise_name: String(r.exercise_name || ''),
+      variant:       String(r.variant || ''),
+      set_number:    Number(r.set_number),
+      reps:          Number(r.reps),
+      weight_kg:     Number(r.weight_kg),
+      notes:         String(r.notes || '')
+    };
+  }
+
+  // ── Workout selector ────────────────────────────────────────────────────────
+  function populateWorkoutSelector() {
+    if (!config) return;
+    const sel = document.getElementById('workout-select');
+    Object.keys(config.workouts).forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      sel.appendChild(opt);
+    });
+    sel.addEventListener('change', () => {
+      if (sel.value) renderExercises(sel.value);
+      else document.getElementById('exercises-container').innerHTML = '';
+    });
+  }
+
+  // ── Exercise cards ──────────────────────────────────────────────────────────
+  function renderExercises(workoutName) {
+    const container = document.getElementById('exercises-container');
+    container.innerHTML = '';
+    config.workouts[workoutName].exercises.forEach(ex => {
+      container.appendChild(buildCard(ex, workoutName));
+    });
+  }
+
+  function buildCard(ex, workoutName) {
+    const unit  = getUnit(ex.name);
+    const sugg  = computeSuggestion(ex.name, ex.rep_range[1]);
+    const card  = document.createElement('div');
+    card.className = 'exercise-card';
+
+    // Header
+    const hdr = el('div', 'card-header');
+    hdr.appendChild(el('div', 'card-title', ex.name));
+    hdr.appendChild(el('div', 'card-meta', `${ex.sets} sets · ${ex.rep_range[0]}–${ex.rep_range[1]} reps`));
+    const suggEl = el('div', 'card-sugg ' + suggClass(sugg), suggText(sugg, unit));
+    hdr.appendChild(suggEl);
+    card.appendChild(hdr);
+
+    // Body
+    const body = el('div', 'card-body');
+
+    // Options row
+    const opts = el('div', 'card-options');
+    const varSel = document.createElement('select');
+    varSel.className = 'variant-select';
+    ex.variants.forEach(v => {
+      const o = document.createElement('option');
+      o.value = o.textContent = v;
+      varSel.appendChild(o);
+    });
+    opts.appendChild(varSel);
+    opts.appendChild(buildUnitToggle(ex.name, card, suggEl, ex.rep_range[1], unit));
+    body.appendChild(opts);
+
+    // Column labels
+    const labels = el('div', 'set-labels');
+    labels.innerHTML = '<span></span><span>Reps</span><span>Weight</span><span></span>';
+    body.appendChild(labels);
+
+    // Set rows
+    const setRows = el('div', 'set-rows');
+    const defaultWt = sugg ? kgToDisplay(sugg.suggested, unit) : '';
+    for (let i = 1; i <= ex.sets; i++) setRows.appendChild(buildSetRow(i, defaultWt));
+    body.appendChild(setRows);
+    card.appendChild(body);
+
+    // Footer
+    const footer = el('div', 'card-footer');
+
+    const addBtn = el('button', 'btn-add-set', '+ Add set');
+    addBtn.addEventListener('click', () => {
+      const n = setRows.querySelectorAll('.set-row').length + 1;
+      setRows.appendChild(buildSetRow(n, sugg ? kgToDisplay(sugg.suggested, getUnit(ex.name)) : ''));
+    });
+    footer.appendChild(addBtn);
+
+    const notesInput = document.createElement('input');
+    notesInput.type = 'text';
+    notesInput.className = 'notes-input';
+    notesInput.placeholder = 'Notes (optional)';
+    footer.appendChild(notesInput);
+
+    const logBtn = el('button', 'btn-log', 'Log Exercise');
+    const confirmEl = el('div', 'save-confirm', '✓ Saved');
+    logBtn.addEventListener('click', () =>
+      logExercise(card, ex, workoutName, varSel, notesInput, logBtn, confirmEl, setRows)
+    );
+    footer.appendChild(logBtn);
+    footer.appendChild(confirmEl);
+
+    card.appendChild(footer);
+    return card;
+  }
+
+  function buildSetRow(num, defaultWt) {
+    const row = el('div', 'set-row');
+    const numEl = el('span', 'set-num', String(num));
+
+    const repsIn = document.createElement('input');
+    repsIn.type = 'number';
+    repsIn.className = 'input-reps';
+    repsIn.min = '0';
+    repsIn.inputMode = 'numeric';
+    repsIn.placeholder = 'reps';
+
+    const wtIn = document.createElement('input');
+    wtIn.type = 'number';
+    wtIn.className = 'input-weight';
+    wtIn.min = '0';
+    wtIn.step = '0.5';
+    wtIn.inputMode = 'decimal';
+    wtIn.placeholder = defaultWt !== '' ? String(defaultWt) : 'wt';
+
+    const removeBtn = el('button', 'btn-remove-set', '×');
+    removeBtn.type = 'button';
+    removeBtn.addEventListener('click', () => {
+      row.remove();
+      renumberSets(setRowsContainer(removeBtn));
+    });
+
+    row.append(numEl, repsIn, wtIn, removeBtn);
+    return row;
+  }
+
+  function setRowsContainer(el) {
+    let n = el.parentElement;
+    while (n && !n.classList.contains('set-rows')) n = n.parentElement;
+    return n;
+  }
+
+  function renumberSets(container) {
+    if (!container) return;
+    container.querySelectorAll('.set-row .set-num').forEach((el, i) => { el.textContent = i + 1; });
+  }
+
+  function buildUnitToggle(exerciseName, card, suggEl, repRangeTop, initialUnit) {
+    const toggle = el('div', 'unit-toggle');
+    ['kg', 'lbs'].forEach(u => {
+      const btn = el('button', 'unit-btn' + (u === initialUnit ? ' active' : ''), u);
+      btn.type = 'button';
+      btn.addEventListener('click', () => {
+        setUnit(exerciseName, u);
+        toggle.querySelectorAll('.unit-btn').forEach(b => b.classList.toggle('active', b.textContent === u));
+        updateCardForUnit(card, exerciseName, suggEl, repRangeTop, u);
+      });
+      toggle.appendChild(btn);
+    });
+    return toggle;
+  }
+
+  function updateCardForUnit(card, exerciseName, suggEl, repRangeTop, unit) {
+    const sugg = computeSuggestion(exerciseName, repRangeTop);
+    suggEl.className = 'card-sugg ' + suggClass(sugg);
+    suggEl.textContent = suggText(sugg, unit);
+    const defaultWt = sugg ? kgToDisplay(sugg.suggested, unit) : '';
+    card.querySelectorAll('.input-weight').forEach(inp => {
+      inp.placeholder = defaultWt !== '' ? String(defaultWt) : 'wt';
+    });
+  }
+
+  // ── Suggestion helpers ──────────────────────────────────────────────────────
+  function getLastSession(exerciseName) {
+    const rows = history.filter(r => r.exercise_name === exerciseName);
+    if (!rows.length) return null;
+    const lastDate = rows.map(r => r.date).sort().at(-1);
+    return { date: lastDate, rows: rows.filter(r => r.date === lastDate) };
+  }
+
+  function computeSuggestion(exerciseName, repRangeTop) {
+    const sess = getLastSession(exerciseName);
+    if (!sess) return null;
+    const maxWt = Math.max(...sess.rows.map(r => r.weight_kg));
+    const allHit = sess.rows.every(r => r.reps >= repRangeTop);
+    return { lastWeight: maxWt, suggested: allHit ? maxWt + 2.5 : maxWt, progressed: allHit };
+  }
+
+  function suggClass(s) {
+    if (!s) return 'sugg-none';
+    return s.progressed ? 'sugg-progress' : 'sugg-same';
+  }
+
+  function suggText(s, unit) {
+    if (!s) return 'No previous data';
+    const last = fmtWt(s.lastWeight, unit);
+    const sugg = fmtWt(s.suggested, unit);
+    return s.progressed
+      ? `Last: ${last} → Try ${sugg} (+2.5 kg)`
+      : `Last: ${last} → Same weight`;
+  }
+
+  // ── Logging ─────────────────────────────────────────────────────────────────
+  async function logExercise(card, ex, workoutName, varSel, notesInput, logBtn, confirmEl, setRows) {
+    const date    = document.getElementById('workout-date').value;
+    const variant = varSel.value;
+    const notes   = notesInput.value.trim();
+    const unit    = getUnit(ex.name);
+
+    const rows = [];
+    setRows.querySelectorAll('.set-row').forEach(row => {
+      const setNum  = Number(row.querySelector('.set-num').textContent);
+      const reps    = Number(row.querySelector('.input-reps').value);
+      const wtRaw   = Number(row.querySelector('.input-weight').value);
+      if (!reps || !wtRaw) return;
+      const weightKg = unit === 'lbs' ? roundHalf(wtRaw * 0.453592) : wtRaw;
+      rows.push({ date, workout_name: workoutName, exercise_name: ex.name, variant, set_number: setNum, reps, weight_kg: weightKg, notes });
+    });
+
+    if (!rows.length) {
+      showBanner('Fill in at least one complete set before logging.', 'warn');
+      return;
+    }
+
+    logBtn.disabled = true;
+    logBtn.textContent = 'Saving…';
+
+    try {
+      const result = await postRows(rows);
+      if (result && result.error) throw new Error(result.error);
+
+      rows.forEach(r => history.push({ ...r, logged_at: new Date().toISOString() }));
+
+      confirmEl.classList.add('visible');
+      setTimeout(() => confirmEl.classList.remove('visible'), 2500);
+    } catch (err) {
+      showBanner('Save failed: ' + err.message, 'error');
+    } finally {
+      logBtn.disabled = false;
+      logBtn.textContent = 'Log Exercise';
+    }
+  }
+
+  async function postRows(rows) {
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.startsWith('YOUR_')) {
+      throw new Error('APPS_SCRIPT_URL not configured');
+    }
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rows })
+    });
+    return res.json();
+  }
+
+  // ── Units ────────────────────────────────────────────────────────────────────
+  function getUnit(name)      { return localStorage.getItem('unit_' + name) || 'kg'; }
+  function setUnit(name, u)   { localStorage.setItem('unit_' + name, u); }
+  function kgToDisplay(kg, u) { return u === 'lbs' ? roundHalf(kg / 0.453592) : kg; }
+  function roundHalf(n)       { return Math.round(n * 2) / 2; }
+  function fmtWt(kg, unit) {
+    const v = kgToDisplay(kg, unit);
+    return v % 1 === 0 ? `${v}${unit}` : `${v}${unit}`;
+  }
+
+  // ── Dashboard ────────────────────────────────────────────────────────────────
+  function renderDashboard() {
+    if (!config) return;
+    const container = document.getElementById('dashboard-container');
+    container.innerHTML = '';
+
+    const allExercises = [];
+    Object.entries(config.workouts).forEach(([workoutName, workout]) => {
+      workout.exercises.forEach(ex => allExercises.push({ ...ex, workoutName }));
+    });
+
+    allExercises.forEach(ex => container.appendChild(buildDashCard(ex)));
+  }
+
+  function buildDashCard(ex) {
+    const card = el('div', 'dash-card');
+
+    const hdr = el('div', 'dash-card-header');
+    hdr.appendChild(el('div', 'dash-title', ex.name));
+    hdr.appendChild(el('div', 'dash-subtitle', ex.workoutName));
+    card.appendChild(hdr);
+
+    const exRows = history.filter(r => r.exercise_name === ex.name);
+    if (!exRows.length) {
+      card.appendChild(el('p', 'dash-empty', 'No data yet'));
+      return card;
+    }
+
+    // Stats
+    const stats = el('div', 'dash-stats');
+
+    const lastSess = getLastSession(ex.name);
+    if (lastSess) {
+      const setLines = lastSess.rows.map(r => `${r.reps}×${r.weight_kg}kg`).join(', ');
+      stats.appendChild(buildStat('Last Session', setLines, lastSess.date));
+    }
+
+    const maxWtRow = exRows.reduce((a, b) => b.weight_kg > a.weight_kg ? b : a);
+    stats.appendChild(buildStat('All-time Max', `${maxWtRow.weight_kg} kg`, maxWtRow.date));
+
+    const maxRepsRow = exRows.reduce((a, b) => {
+      if (b.reps > a.reps) return b;
+      if (b.reps === a.reps && b.weight_kg > a.weight_kg) return b;
+      return a;
+    });
+    stats.appendChild(buildStat('Best Set', `${maxRepsRow.reps} reps @ ${maxRepsRow.weight_kg}kg`, maxRepsRow.date));
+
+    card.appendChild(stats);
+
+    // Charts
+    const chartsWrap = el('div', 'dash-charts');
+    const wtCanvas  = document.createElement('canvas');
+    const volCanvas = document.createElement('canvas');
+    chartsWrap.appendChild(wrapChart('Max weight (kg)', wtCanvas));
+    chartsWrap.appendChild(wrapChart('Volume (kg)', volCanvas));
+    card.appendChild(chartsWrap);
+
+    requestAnimationFrame(() => {
+      drawLineChart(wtCanvas,  maxWeightHistory(ex.name), '#2563eb');
+      drawLineChart(volCanvas, volumeHistory(ex.name),    '#16a34a');
+    });
+
+    return card;
+  }
+
+  function buildStat(label, value, date) {
+    const s = el('div', 'stat');
+    s.appendChild(el('div', 'stat-label', label));
+    s.appendChild(el('div', 'stat-value', value));
+    s.appendChild(el('div', 'stat-date', date));
+    return s;
+  }
+
+  function wrapChart(title, canvas) {
+    const wrap = el('div', 'chart-wrap');
+    wrap.appendChild(el('div', 'chart-label', title));
+    wrap.appendChild(canvas);
+    return wrap;
+  }
+
+  // ── Chart ─────────────────────────────────────────────────────────────────────
+  function drawLineChart(canvas, points, color) {
+    const W = canvas.parentElement.clientWidth || 320;
+    const H = 140;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width  = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width  = W + 'px';
+    canvas.style.height = H + 'px';
+
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+
+    const PAD = { top: 18, right: 12, bottom: 40, left: 44 };
+    const pW = W - PAD.left - PAD.right;
+    const pH = H - PAD.top - PAD.bottom;
+
+    ctx.clearRect(0, 0, W, H);
+
+    if (!points.length) {
+      ctx.fillStyle = '#a1a1aa';
+      ctx.font = '13px -apple-system, system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('No data', W / 2, H / 2 + 5);
+      return;
+    }
+
+    const ys = points.map(p => p.y);
+    const yMin  = Math.min(...ys);
+    const yMax  = Math.max(...ys);
+    const ySpan = yMax - yMin || 1;
+    const n = points.length;
+
+    const toX = i => PAD.left + (n === 1 ? pW / 2 : i * pW / (n - 1));
+    const toY = y => PAD.top + pH - ((y - yMin) / ySpan) * pH;
+
+    // y-axis gridlines + labels
+    ctx.font = '11px -apple-system, system-ui, sans-serif';
+    ctx.textAlign = 'right';
+    [0, 0.5, 1].forEach(t => {
+      const gY = PAD.top + pH * (1 - t);
+      const val = yMin + t * ySpan;
+      ctx.strokeStyle = '#e4e4e7';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(PAD.left, gY);
+      ctx.lineTo(PAD.left + pW, gY);
+      ctx.stroke();
+      ctx.fillStyle = '#71717a';
+      ctx.fillText(Math.round(val * 10) / 10, PAD.left - 5, gY + 4);
+    });
+
+    // x-axis date labels (up to 4 evenly spaced)
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#71717a';
+    const step = Math.max(1, Math.ceil(n / 4));
+    const labelIdxs = new Set();
+    for (let i = 0; i < n; i += step) labelIdxs.add(i);
+    labelIdxs.add(n - 1);
+    labelIdxs.forEach(i => {
+      const lx = toX(i);
+      ctx.save();
+      ctx.translate(lx, PAD.top + pH + 14);
+      ctx.rotate(-Math.PI / 6);
+      ctx.fillText(points[i].x.slice(5), 0, 0);
+      ctx.restore();
+    });
+
+    // Line
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    points.forEach((p, i) => {
+      i === 0 ? ctx.moveTo(toX(i), toY(p.y)) : ctx.lineTo(toX(i), toY(p.y));
+    });
+    ctx.stroke();
+
+    // Dots
+    ctx.fillStyle = color;
+    points.forEach((p, i) => {
+      ctx.beginPath();
+      ctx.arc(toX(i), toY(p.y), 3.5, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  // ── Data helpers ────────────────────────────────────────────────────────────
+  function maxWeightHistory(exerciseName) {
+    const map = {};
+    history.filter(r => r.exercise_name === exerciseName).forEach(r => {
+      if (!(r.date in map) || r.weight_kg > map[r.date]) map[r.date] = r.weight_kg;
+    });
+    return Object.entries(map).sort((a, b) => a[0] < b[0] ? -1 : 1).map(([x, y]) => ({ x, y }));
+  }
+
+  function volumeHistory(exerciseName) {
+    const map = {};
+    history.filter(r => r.exercise_name === exerciseName).forEach(r => {
+      map[r.date] = (map[r.date] || 0) + r.reps * r.weight_kg;
+    });
+    return Object.entries(map).sort((a, b) => a[0] < b[0] ? -1 : 1).map(([x, y]) => ({ x, y: Math.round(y) }));
+  }
+
+  // ── Banner ──────────────────────────────────────────────────────────────────
+  function showBanner(msg, type) {
+    const b = document.getElementById('banner');
+    b.textContent = msg;
+    b.className = 'banner banner-' + type;
+    b.style.display = 'block';
+    if (type !== 'error') setTimeout(() => { b.style.display = 'none'; }, 5000);
+  }
+
+  // ── DOM helper ──────────────────────────────────────────────────────────────
+  function el(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+</script>
+</body>
+</html>
