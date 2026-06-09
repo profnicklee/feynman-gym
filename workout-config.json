@@ -73,6 +73,34 @@
           "variants": ["Rope Face Pull", "Rope High Pull", "Dumbbell Rear Delt Fly"]
         }
       ]
+    },
+    "Travel Workout": {
+      "exercises": []
+    },
+    "MED Session": {
+      "exercises": [
+        {
+          "name": "Kettlebell Swing",
+          "sets": 12,
+          "rep_range": [30, 30],
+          "set_type": "timed",
+          "variants": ["Two-hand", "Single-hand Left", "Single-hand Right"]
+        },
+        {
+          "name": "Pushup",
+          "sets": 3,
+          "rep_range": [10, 20],
+          "set_type": "reps",
+          "variants": ["Standard", "Wide Grip", "Weighted Vest"]
+        },
+        {
+          "name": "Burpee",
+          "sets": 12,
+          "rep_range": [30, 30],
+          "set_type": "timed",
+          "variants": ["Standard", "Box Jump", "No Jump"]
+        }
+      ]
     }
   }
 }

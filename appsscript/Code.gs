@@ -3,7 +3,7 @@ var TAB_NAME         = 'workouts';
 var SESSION_TAB_NAME = 'workout_sessions';
 var SECRET_TOKEN     = 'FEYNMAN_GYM_2026';
 var HEADERS          = ['logged_at', 'date', 'workout_name', 'exercise_name', 'variant', 'set_number', 'reps', 'weight_kg', 'notes'];
-var SESSION_HEADERS  = ['date', 'workout_name', 'start_time', 'end_time', 'duration_minutes', 'total_rest_seconds'];
+var SESSION_HEADERS  = ['date', 'workout_name', 'start_time', 'end_time', 'duration_minutes', 'total_rest_seconds', 'location'];
 
 // Deployment: Execute as Me, Who has access: Anyone
 // "Anyone" is required for CORS to work with token auth.
@@ -98,7 +98,8 @@ function logSession_(session) {
     session.start_time,
     session.end_time,
     session.duration_minutes,
-    session.total_rest_seconds
+    session.total_rest_seconds,
+    session.location || ''
   ]);
 
   return jsonResponse_({ success: true });

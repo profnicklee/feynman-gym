@@ -112,6 +112,21 @@
       padding-right: 32px;
     }
 
+    /* ── Location input ───────────────────────────────────────────────────────── */
+    .location-input {
+      width: 100%;
+      height: 48px;
+      padding: 0 12px;
+      font-size: 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg);
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .location-input::placeholder { color: var(--muted); }
+    .location-input:focus { outline: none; border-color: var(--accent); }
+
     /* ── Start Workout ────────────────────────────────────────────────────────── */
     .start-workout-wrap { margin-bottom: 16px; }
     .btn-start-workout {
@@ -155,6 +170,22 @@
     }
     .btn-end-workout:active { opacity: 0.85; }
 
+    /* ── Add Exercise button ──────────────────────────────────────────────────── */
+    .btn-add-exercise {
+      display: none;
+      width: 100%;
+      height: 52px;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--muted);
+      background: none;
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 16px;
+    }
+    .btn-add-exercise:active { background: var(--surface); }
+    .session-active .btn-add-exercise { display: block; }
+
     /* ── Exercise card ────────────────────────────────────────────────────────── */
     .exercise-card {
       border: 1px solid var(--border);
@@ -185,6 +216,56 @@
     .card-sugg.sugg-progress { color: var(--success); }
     .card-sugg.sugg-same     { color: var(--accent); }
     .card-sugg.sugg-none     { color: var(--muted); }
+
+    /* ── Freeform card ────────────────────────────────────────────────────────── */
+    .freeform-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .freeform-name-input {
+      flex: 1;
+      height: 40px;
+      padding: 0 10px;
+      font-size: 16px;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg);
+      color: var(--text);
+    }
+    .freeform-name-input:focus { outline: none; border-color: var(--accent); }
+    .btn-remove-card {
+      height: 36px;
+      width: 36px;
+      font-size: 18px;
+      border: none;
+      background: none;
+      color: var(--muted);
+      border-radius: var(--radius-sm);
+      flex-shrink: 0;
+    }
+    .btn-remove-card:active { background: var(--surface); }
+    .freeform-name-error {
+      font-size: 13px;
+      color: var(--danger);
+      padding: 4px 16px 8px;
+    }
+    .freeform-variant-input {
+      flex: 1;
+      min-width: 0;
+      height: 44px;
+      padding: 0 10px;
+      font-size: 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg);
+      color: var(--text);
+    }
+    .freeform-variant-input:focus { outline: none; border-color: var(--accent); }
+    /* Reps/Timed type toggle stretches to fill its row */
+    .type-toggle { width: 100%; }
+    .type-toggle .unit-btn { flex: 1; width: auto; }
 
     /* ── Card body ────────────────────────────────────────────────────────────── */
     .card-body { padding: 12px 16px 0; }
@@ -249,6 +330,7 @@
       color: var(--muted);
       text-align: center;
     }
+    .set-labels.timed { grid-template-columns: 28px 1fr 88px; }
 
     /* ── Set rows ─────────────────────────────────────────────────────────────── */
     .set-rows { display: flex; flex-direction: column; gap: 6px; }
@@ -258,6 +340,7 @@
       gap: 6px;
       align-items: center;
     }
+    .set-row.timed { grid-template-columns: 28px 1fr 88px; }
     .set-num {
       font-size: 13px;
       font-weight: 700;
@@ -463,10 +546,10 @@
       background: var(--surface);
       border-bottom: 1px solid var(--border);
     }
-    .dash-title  { font-size: 16px; font-weight: 700; }
+    .dash-title    { font-size: 16px; font-weight: 700; }
     .dash-subtitle { font-size: 12px; color: var(--muted); margin-top: 1px; }
-    .dash-empty  { padding: 16px; font-size: 14px; color: var(--muted); }
-    .dash-stats  {
+    .dash-empty    { padding: 16px; font-size: 14px; color: var(--muted); }
+    .dash-stats {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 1px;
@@ -517,6 +600,7 @@
 
     <!-- Shown after workout selected, hidden once session starts -->
     <div id="start-workout-wrap" class="start-workout-wrap" style="display:none">
+      <input type="text" id="location-input" class="location-input" placeholder="Location (optional)">
       <button id="btn-start-workout" class="btn-start-workout">Start Workout</button>
     </div>
 
@@ -564,11 +648,12 @@
   let history = [];
 
   // ── Session state ────────────────────────────────────────────────────────────
-  let sessionActive   = false;
-  let sessionStart    = null;
-  let sessionWorkout  = '';
-  let setsLoggedCount = 0;
-  let elapsedInterval = null;
+  let sessionActive    = false;
+  let sessionStart     = null;
+  let sessionWorkout   = '';
+  let sessionLocation  = '';
+  let setsLoggedCount  = 0;
+  let elapsedInterval  = null;
 
   // ── Rest timer state ─────────────────────────────────────────────────────────
   let restSecondsLeft  = 0;
@@ -610,7 +695,7 @@
     document.getElementById('btn-done').addEventListener('click', resetSession);
   }
 
-  // ── Date ────────────────────────────────────────────────────────────────────
+  // ── Date & time helpers ──────────────────────────────────────────────────────
   function setTodayDate() {
     document.getElementById('workout-date').value = todayISO();
   }
@@ -621,6 +706,11 @@
   }
 
   function pad(n) { return String(n).padStart(2, '0'); }
+
+  function localISO(d) {
+    d = d || new Date();
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  }
 
   // ── Config ──────────────────────────────────────────────────────────────────
   async function loadConfig() {
@@ -695,11 +785,12 @@
     const workoutName = document.getElementById('workout-select').value;
     if (!workoutName) return;
 
-    sessionStart    = new Date();
-    sessionWorkout  = workoutName;
-    setsLoggedCount = 0;
+    sessionStart     = new Date();
+    sessionWorkout   = workoutName;
+    sessionLocation  = document.getElementById('location-input').value.trim();
+    setsLoggedCount  = 0;
     totalRestSeconds = 0;
-    sessionActive   = true;
+    sessionActive    = true;
 
     const container = document.getElementById('exercises-container');
     container.style.display = '';
@@ -743,30 +834,34 @@
 
     postSession({
       date,
-      workout_name:      sessionWorkout,
-      start_time:        sessionStart.toISOString(),
-      end_time:          sessionEnd.toISOString(),
-      duration_minutes:  durationMin,
-      total_rest_seconds: totalRestSeconds
+      workout_name:        sessionWorkout,
+      start_time:          localISO(sessionStart),
+      end_time:            localISO(sessionEnd),
+      duration_minutes:    durationMin,
+      total_rest_seconds:  totalRestSeconds,
+      location:            sessionLocation
     }).catch(err => showBanner('Session save failed: ' + err.message, 'error'));
 
-    showSummary(date, sessionWorkout, durationMin, totalRestSeconds, setsLoggedCount);
+    showSummary(date, sessionWorkout, sessionLocation, durationMin, totalRestSeconds, setsLoggedCount);
   }
 
-  function showSummary(date, workoutName, durationMin, restSecs, setsCount) {
-    const restMin = Math.floor(restSecs / 60);
-    const restRemSecs = restSecs % 60;
-    const restFmt = restMin > 0 ? `${restMin}m ${restRemSecs}s` : `${restSecs}s`;
+  function showSummary(date, workoutName, location, durationMin, restSecs, setsCount) {
+    const restMin    = Math.floor(restSecs / 60);
+    const restRemSec = restSecs % 60;
+    const restFmt    = restMin > 0 ? `${restMin}m ${restRemSec}s` : `${restSecs}s`;
 
-    const body = document.getElementById('summary-body');
-    body.innerHTML = '';
-    [
+    const rows = [
       ['Date',        date],
       ['Workout',     workoutName],
       ['Duration',    `${durationMin} min`],
       ['Rest time',   restFmt],
       ['Sets logged', String(setsCount)]
-    ].forEach(([label, value]) => {
+    ];
+    if (location) rows.splice(2, 0, ['Location', location]);
+
+    const body = document.getElementById('summary-body');
+    body.innerHTML = '';
+    rows.forEach(([label, value]) => {
       const row = el('div', 'summary-row');
       row.appendChild(el('span', null, label));
       row.appendChild(el('span', 'summary-val', value));
@@ -780,6 +875,7 @@
     sessionActive    = false;
     sessionStart     = null;
     sessionWorkout   = '';
+    sessionLocation  = '';
     setsLoggedCount  = 0;
     totalRestSeconds = 0;
 
@@ -800,6 +896,7 @@
     document.getElementById('workout-date').disabled = false;
     document.getElementById('workout-select').disabled = false;
     document.getElementById('workout-select').value = '';
+    document.getElementById('location-input').value = '';
 
     const container = document.getElementById('exercises-container');
     container.innerHTML = '';
@@ -813,23 +910,32 @@
   function renderExercises(workoutName) {
     const container = document.getElementById('exercises-container');
     container.innerHTML = '';
-    config.workouts[workoutName].exercises.forEach(ex => {
-      container.appendChild(buildCard(ex, workoutName));
-    });
+    const exercises = (config.workouts[workoutName] && config.workouts[workoutName].exercises) || [];
+    exercises.forEach(ex => container.appendChild(buildCard(ex, workoutName)));
+
+    const addExBtn = el('button', 'btn-add-exercise', '+ Add Exercise');
+    addExBtn.type = 'button';
+    addExBtn.addEventListener('click', () => addExBtn.before(buildFreeformCard(workoutName)));
+    container.appendChild(addExBtn);
   }
 
   function buildCard(ex, workoutName) {
-    const unit = getUnit(ex.name);
-    const sugg = computeSuggestion(ex.name, ex.rep_range[1]);
+    const isTimed = ex.set_type === 'timed';
+    const unit    = isTimed ? 'kg' : getUnit(ex.name);
+    const sugg    = isTimed ? null : computeSuggestion(ex.name, ex.rep_range[1]);
+
     const card = document.createElement('div');
     card.className = 'exercise-card';
 
     // Header
     const hdr = el('div', 'card-header');
     hdr.appendChild(el('div', 'card-title', ex.name));
-    hdr.appendChild(el('div', 'card-meta', `${ex.sets} sets · ${ex.rep_range[0]}–${ex.rep_range[1]} reps`));
-    const suggEl = el('div', 'card-sugg ' + suggClass(sugg), suggText(sugg, unit));
-    hdr.appendChild(suggEl);
+    const metaText = isTimed
+      ? `${ex.sets} sets · ${ex.rep_range[0]}s`
+      : `${ex.sets} sets · ${ex.rep_range[0]}–${ex.rep_range[1]} reps`;
+    hdr.appendChild(el('div', 'card-meta', metaText));
+    const suggEl = isTimed ? null : el('div', 'card-sugg ' + suggClass(sugg), suggText(sugg, unit));
+    if (suggEl) hdr.appendChild(suggEl);
     card.appendChild(hdr);
 
     // Body
@@ -844,37 +950,41 @@
       varSel.appendChild(o);
     });
     opts.appendChild(varSel);
-    opts.appendChild(buildUnitToggle(ex.name, card, suggEl, ex.rep_range[1], unit));
+    if (!isTimed) {
+      opts.appendChild(buildUnitToggle(ex.name, card, suggEl, ex.rep_range[1], unit));
+    }
     body.appendChild(opts);
 
-    const labels = el('div', 'set-labels');
-    labels.innerHTML = '<span></span><span>Reps</span><span>Weight</span><span></span>';
+    const labels = el('div', 'set-labels' + (isTimed ? ' timed' : ''));
+    labels.innerHTML = isTimed
+      ? '<span></span><span>Seconds</span><span></span>'
+      : '<span></span><span>Reps</span><span>Weight</span><span></span>';
     body.appendChild(labels);
 
-    const setRows = el('div', 'set-rows');
-    const defaultWt = sugg ? kgToDisplay(sugg.suggested, unit) : '';
+    const setRows   = el('div', 'set-rows');
+    const defaultWt = (!isTimed && sugg) ? kgToDisplay(sugg.suggested, unit) : '';
 
-    const onLogSet = (row, logBtn) => logSet(row, ex, workoutName, varSel, notesInput, logBtn);
+    const onLogSet = (row, logBtn) => logSet(row, ex, workoutName, varSel, notesInput, logBtn, isTimed);
 
     for (let i = 1; i <= ex.sets; i++) {
-      setRows.appendChild(buildSetRow(i, defaultWt, onLogSet));
+      setRows.appendChild(buildSetRow(i, defaultWt, onLogSet, isTimed));
     }
     body.appendChild(setRows);
     card.appendChild(body);
 
     // Footer
     const footer = el('div', 'card-footer');
-
     const addBtn = el('button', 'btn-add-set', '+ Add set');
     addBtn.addEventListener('click', () => {
-      const n = setRows.querySelectorAll('.set-row').length + 1;
-      setRows.appendChild(buildSetRow(n, sugg ? kgToDisplay(sugg.suggested, getUnit(ex.name)) : '', onLogSet));
+      const n  = setRows.querySelectorAll('.set-row').length + 1;
+      const wt = (!isTimed && sugg) ? kgToDisplay(sugg.suggested, getUnit(ex.name)) : '';
+      setRows.appendChild(buildSetRow(n, wt, onLogSet, isTimed));
     });
     footer.appendChild(addBtn);
 
-    const notesInput = document.createElement('input');
-    notesInput.type = 'text';
-    notesInput.className = 'notes-input';
+    const notesInput       = document.createElement('input');
+    notesInput.type        = 'text';
+    notesInput.className   = 'notes-input';
     notesInput.placeholder = 'Notes (optional)';
     footer.appendChild(notesInput);
 
@@ -882,41 +992,42 @@
     return card;
   }
 
-  function buildSetRow(num, defaultWt, onLogSet) {
-    const row = el('div', 'set-row');
+  function buildSetRow(num, defaultWt, onLogSet, isTimed) {
+    const row = el('div', 'set-row' + (isTimed ? ' timed' : ''));
 
-    const numEl = el('span', 'set-num', String(num));
+    const numEl        = el('span', 'set-num', String(num));
+    const repsIn       = document.createElement('input');
+    repsIn.type        = 'number';
+    repsIn.className   = 'input-reps';
+    repsIn.min         = '0';
+    repsIn.inputMode   = 'numeric';
+    repsIn.placeholder = isTimed ? 'secs' : 'reps';
 
-    const repsIn = document.createElement('input');
-    repsIn.type = 'number';
-    repsIn.className = 'input-reps';
-    repsIn.min = '0';
-    repsIn.inputMode = 'numeric';
-    repsIn.placeholder = 'reps';
-
-    const wtIn = document.createElement('input');
-    wtIn.type = 'number';
-    wtIn.className = 'input-weight';
-    wtIn.min = '0';
-    wtIn.step = '0.5';
-    wtIn.inputMode = 'decimal';
-    wtIn.placeholder = defaultWt !== '' ? String(defaultWt) : 'wt';
-
-    const action = el('div', 'set-action');
-
+    const action    = el('div', 'set-action');
     const removeBtn = el('button', 'btn-remove-set', '×');
-    removeBtn.type = 'button';
+    removeBtn.type  = 'button';
     removeBtn.addEventListener('click', () => {
       row.remove();
       renumberSets(findSetRows(removeBtn));
     });
-
-    const logSetBtn = el('button', 'btn-log-set', 'Log');
-    logSetBtn.type = 'button';
+    const logSetBtn   = el('button', 'btn-log-set', 'Log');
+    logSetBtn.type    = 'button';
     logSetBtn.addEventListener('click', () => onLogSet(row, logSetBtn));
-
     action.append(removeBtn, logSetBtn);
-    row.append(numEl, repsIn, wtIn, action);
+
+    if (isTimed) {
+      row.append(numEl, repsIn, action);
+    } else {
+      const wtIn       = document.createElement('input');
+      wtIn.type        = 'number';
+      wtIn.className   = 'input-weight';
+      wtIn.min         = '0';
+      wtIn.step        = '0.5';
+      wtIn.inputMode   = 'decimal';
+      wtIn.placeholder = defaultWt !== '' ? String(defaultWt) : 'wt';
+      row.append(numEl, repsIn, wtIn, action);
+    }
+
     return row;
   }
 
@@ -948,54 +1059,259 @@
 
   function updateCardForUnit(card, exerciseName, suggEl, repRangeTop, unit) {
     const sugg = computeSuggestion(exerciseName, repRangeTop);
-    suggEl.className = 'card-sugg ' + suggClass(sugg);
-    suggEl.textContent = suggText(sugg, unit);
+    if (suggEl) {
+      suggEl.className   = 'card-sugg ' + suggClass(sugg);
+      suggEl.textContent = suggText(sugg, unit);
+    }
     const defaultWt = sugg ? kgToDisplay(sugg.suggested, unit) : '';
     card.querySelectorAll('.input-weight').forEach(inp => {
       inp.placeholder = defaultWt !== '' ? String(defaultWt) : 'wt';
     });
   }
 
-  // ── Per-set logging ──────────────────────────────────────────────────────────
-  async function logSet(row, ex, workoutName, varSel, notesInput, logBtn) {
-    const date    = document.getElementById('workout-date').value;
+  // ── Per-set logging (config exercises) ──────────────────────────────────────
+  async function logSet(row, ex, workoutName, varSel, notesInput, logBtn, isTimed) {
+    const date   = document.getElementById('workout-date').value;
     const variant = varSel.value;
     const notes   = notesInput.value.trim();
-    const unit    = getUnit(ex.name);
     const setNum  = Number(row.querySelector('.set-num').textContent);
     const reps    = Number(row.querySelector('.input-reps').value);
-    const wtRaw   = Number(row.querySelector('.input-weight').value);
 
-    if (!reps || !wtRaw) {
-      showBanner('Enter reps and weight before logging this set.', 'warn');
+    if (!reps) {
+      showBanner(isTimed ? 'Enter seconds before logging this set.' : 'Enter reps before logging this set.', 'warn');
       return;
     }
 
-    const weightKg = unit === 'lbs' ? roundHalf(wtRaw * 0.453592) : wtRaw;
-    const rowData  = { date, workout_name: workoutName, exercise_name: ex.name, variant, set_number: setNum, reps, weight_kg: weightKg, notes };
+    let weightKg = 0;
+    if (!isTimed) {
+      const unit  = getUnit(ex.name);
+      const wtRaw = Number(row.querySelector('.input-weight').value);
+      if (!wtRaw) {
+        showBanner('Enter weight before logging this set.', 'warn');
+        return;
+      }
+      weightKg = unit === 'lbs' ? roundHalf(wtRaw * 0.453592) : wtRaw;
+    }
 
-    logBtn.disabled = true;
+    const rowData = { date, workout_name: workoutName, exercise_name: ex.name, variant, set_number: setNum, reps, weight_kg: weightKg, notes };
+
+    logBtn.disabled    = true;
     logBtn.textContent = '…';
 
     try {
       const result = await postRows([rowData]);
       if (result && result.error) throw new Error(result.error);
-
       row.classList.add('logged');
       row.querySelectorAll('input').forEach(inp => { inp.disabled = true; });
       logBtn.textContent = '✓';
-
-      history.push({ ...rowData, logged_at: new Date().toISOString() });
+      history.push({ ...rowData, logged_at: localISO() });
       setsLoggedCount++;
-
       startRestTimer(60);
     } catch (err) {
       showBanner('Save failed: ' + err.message, 'error');
-      logBtn.disabled = false;
+      logBtn.disabled    = false;
       logBtn.textContent = 'Log';
     }
   }
 
+  // ── Freeform exercise card ───────────────────────────────────────────────────
+  function buildFreeformCard(workoutName) {
+    let isTimed = false;
+    const card  = el('div', 'exercise-card freeform-card');
+
+    // Header: name input + remove button
+    const hdr       = el('div', 'card-header freeform-header');
+    const nameInput = document.createElement('input');
+    nameInput.type        = 'text';
+    nameInput.className   = 'freeform-name-input';
+    nameInput.placeholder = 'Exercise name';
+    const removeCardBtn = el('button', 'btn-remove-card', '✕');
+    removeCardBtn.type = 'button';
+    removeCardBtn.addEventListener('click', () => card.remove());
+    hdr.append(nameInput, removeCardBtn);
+    card.appendChild(hdr);
+
+    // Name error shown inline below header
+    const nameError = el('div', 'freeform-name-error', 'Enter an exercise name');
+    nameError.style.display = 'none';
+    card.appendChild(nameError);
+    nameInput.addEventListener('input', () => { nameError.style.display = 'none'; });
+
+    // Body
+    const body = el('div', 'card-body');
+
+    // Row 1: Reps / Timed type toggle (full width)
+    const typeRow    = el('div', 'card-options');
+    const typeToggle = el('div', 'unit-toggle type-toggle');
+    const btnReps    = el('button', 'unit-btn active', 'Reps');
+    const btnTimed   = el('button', 'unit-btn', 'Timed');
+    btnReps.type  = 'button';
+    btnTimed.type = 'button';
+    typeToggle.append(btnReps, btnTimed);
+    typeRow.appendChild(typeToggle);
+    body.appendChild(typeRow);
+
+    // Row 2: variant text input + kg/lbs unit toggle
+    const opts           = el('div', 'card-options');
+    const variantInput   = document.createElement('input');
+    variantInput.type        = 'text';
+    variantInput.className   = 'freeform-variant-input';
+    variantInput.placeholder = 'Variant (optional)';
+    opts.appendChild(variantInput);
+
+    const unitToggleEl = el('div', 'unit-toggle');
+    ['kg', 'lbs'].forEach(u => {
+      const btn = el('button', 'unit-btn' + (u === 'kg' ? ' active' : ''), u);
+      btn.type = 'button';
+      btn.addEventListener('click', () => {
+        const name = nameInput.value.trim();
+        if (name) setUnit(name, u);
+        unitToggleEl.querySelectorAll('.unit-btn').forEach(b => b.classList.toggle('active', b.textContent === u));
+      });
+      unitToggleEl.appendChild(btn);
+    });
+    opts.appendChild(unitToggleEl);
+    body.appendChild(opts);
+
+    // Set labels
+    const labelsEl = el('div', 'set-labels');
+    labelsEl.innerHTML = '<span></span><span>Reps</span><span>Weight</span><span></span>';
+    body.appendChild(labelsEl);
+
+    const setRows = el('div', 'set-rows');
+
+    // notesInput declared before onLogSet so the closure can reference it
+    const notesInput       = document.createElement('input');
+    notesInput.type        = 'text';
+    notesInput.className   = 'notes-input';
+    notesInput.placeholder = 'Notes (optional)';
+
+    const onLogSet = (row, logBtn) => logFreeformSet(row, logBtn, {
+      workoutName, nameInput, variantInput, notesInput, unitToggleEl,
+      isTimed: () => isTimed, nameError
+    });
+
+    for (let i = 1; i <= 3; i++) {
+      setRows.appendChild(buildSetRow(i, '', onLogSet, false));
+    }
+    body.appendChild(setRows);
+    card.appendChild(body);
+
+    // Footer
+    const footer    = el('div', 'card-footer');
+    const addSetBtn = el('button', 'btn-add-set', '+ Add set');
+    addSetBtn.addEventListener('click', () => {
+      const n = setRows.querySelectorAll('.set-row').length + 1;
+      setRows.appendChild(buildSetRow(n, '', onLogSet, isTimed));
+    });
+    footer.appendChild(addSetBtn);
+    footer.appendChild(notesInput);
+    card.appendChild(footer);
+
+    // ── Type toggle logic ────────────────────────────────────────────────────
+    function applyTypeMode(timed) {
+      isTimed = timed;
+      btnReps.classList.toggle('active', !timed);
+      btnTimed.classList.toggle('active', timed);
+      unitToggleEl.style.display = timed ? 'none' : '';
+      labelsEl.className = 'set-labels' + (timed ? ' timed' : '');
+      labelsEl.innerHTML = timed
+        ? '<span></span><span>Seconds</span><span></span>'
+        : '<span></span><span>Reps</span><span>Weight</span><span></span>';
+      setRows.querySelectorAll('.set-row').forEach(r => {
+        if (timed) {
+          r.classList.add('timed');
+          const wtEl = r.querySelector('.input-weight');
+          if (wtEl) wtEl.remove();
+          r.querySelector('.input-reps').placeholder = 'secs';
+        } else {
+          r.classList.remove('timed');
+          r.querySelector('.input-reps').placeholder = 'reps';
+          if (!r.querySelector('.input-weight')) {
+            const wtIn       = document.createElement('input');
+            wtIn.type        = 'number';
+            wtIn.className   = 'input-weight';
+            wtIn.min         = '0';
+            wtIn.step        = '0.5';
+            wtIn.inputMode   = 'decimal';
+            wtIn.placeholder = 'wt';
+            r.insertBefore(wtIn, r.querySelector('.set-action'));
+          }
+        }
+      });
+    }
+
+    btnReps.addEventListener('click', () => applyTypeMode(false));
+    btnTimed.addEventListener('click', () => applyTypeMode(true));
+
+    return card;
+  }
+
+  async function logFreeformSet(row, logBtn, params) {
+    const { workoutName, nameInput, variantInput, notesInput, unitToggleEl, isTimed: getIsTimed, nameError } = params;
+    const exerciseName = nameInput.value.trim();
+    const timed        = getIsTimed();
+
+    if (!exerciseName) {
+      nameError.style.display = '';
+      nameInput.focus();
+      return;
+    }
+
+    const date    = document.getElementById('workout-date').value;
+    const variant = variantInput.value.trim();
+    const notes   = notesInput.value.trim();
+    const setNum  = Number(row.querySelector('.set-num').textContent);
+    const reps    = Number(row.querySelector('.input-reps').value);
+
+    if (!reps) {
+      showBanner(timed ? 'Enter seconds before logging this set.' : 'Enter reps before logging this set.', 'warn');
+      return;
+    }
+
+    let weightKg = 0;
+    if (!timed) {
+      const activeBtn = unitToggleEl.querySelector('.unit-btn.active');
+      const unit      = activeBtn ? activeBtn.textContent : 'kg';
+      const wtRaw     = Number(row.querySelector('.input-weight').value);
+      if (!wtRaw) {
+        showBanner('Enter weight before logging this set.', 'warn');
+        return;
+      }
+      weightKg = unit === 'lbs' ? roundHalf(wtRaw * 0.453592) : wtRaw;
+    }
+
+    const rowData = {
+      date,
+      workout_name:  workoutName,
+      exercise_name: exerciseName,
+      variant,
+      set_number:    setNum,
+      reps,
+      weight_kg:     weightKg,
+      notes
+    };
+
+    logBtn.disabled    = true;
+    logBtn.textContent = '…';
+
+    try {
+      const result = await postRows([rowData]);
+      if (result && result.error) throw new Error(result.error);
+      row.classList.add('logged');
+      row.querySelectorAll('input').forEach(inp => { inp.disabled = true; });
+      logBtn.textContent = '✓';
+      history.push({ ...rowData, logged_at: localISO() });
+      setsLoggedCount++;
+      startRestTimer(60);
+    } catch (err) {
+      showBanner('Save failed: ' + err.message, 'error');
+      logBtn.disabled    = false;
+      logBtn.textContent = 'Log';
+    }
+  }
+
+  // ── Network ──────────────────────────────────────────────────────────────────
   async function postRows(rows) {
     if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.startsWith('YOUR_')) {
       throw new Error('APPS_SCRIPT_URL not configured');
@@ -1146,8 +1462,7 @@
       return card;
     }
 
-    const stats = el('div', 'dash-stats');
-
+    const stats    = el('div', 'dash-stats');
     const lastSess = getLastSession(ex.name);
     if (lastSess) {
       const setLines = lastSess.rows.map(r => `${r.reps}×${r.weight_kg}kg`).join(', ');
@@ -1198,8 +1513,8 @@
 
   // ── Chart ─────────────────────────────────────────────────────────────────────
   function drawLineChart(canvas, points, color) {
-    const W = canvas.parentElement.clientWidth || 320;
-    const H = 140;
+    const W   = canvas.parentElement.clientWidth || 320;
+    const H   = 140;
     const dpr = window.devicePixelRatio || 1;
     canvas.width  = W * dpr;
     canvas.height = H * dpr;
@@ -1210,15 +1525,15 @@
     ctx.scale(dpr, dpr);
 
     const PAD = { top: 18, right: 12, bottom: 40, left: 44 };
-    const pW = W - PAD.left - PAD.right;
-    const pH = H - PAD.top - PAD.bottom;
+    const pW  = W - PAD.left - PAD.right;
+    const pH  = H - PAD.top  - PAD.bottom;
 
     ctx.clearRect(0, 0, W, H);
 
     if (!points.length) {
-      ctx.fillStyle = '#a1a1aa';
-      ctx.font = '13px -apple-system, system-ui, sans-serif';
-      ctx.textAlign = 'center';
+      ctx.fillStyle  = '#a1a1aa';
+      ctx.font       = '13px -apple-system, system-ui, sans-serif';
+      ctx.textAlign  = 'center';
       ctx.fillText('No data', W / 2, H / 2 + 5);
       return;
     }
@@ -1232,13 +1547,13 @@
     const toX = i => PAD.left + (n === 1 ? pW / 2 : i * pW / (n - 1));
     const toY = y => PAD.top + pH - ((y - yMin) / ySpan) * pH;
 
-    ctx.font = '11px -apple-system, system-ui, sans-serif';
+    ctx.font      = '11px -apple-system, system-ui, sans-serif';
     ctx.textAlign = 'right';
     [0, 0.5, 1].forEach(t => {
       const gY  = PAD.top + pH * (1 - t);
       const val = yMin + t * ySpan;
       ctx.strokeStyle = '#e4e4e7';
-      ctx.lineWidth = 1;
+      ctx.lineWidth   = 1;
       ctx.beginPath();
       ctx.moveTo(PAD.left, gY);
       ctx.lineTo(PAD.left + pW, gY);
@@ -1249,7 +1564,7 @@
 
     ctx.textAlign = 'center';
     ctx.fillStyle = '#71717a';
-    const step = Math.max(1, Math.ceil(n / 4));
+    const step      = Math.max(1, Math.ceil(n / 4));
     const labelIdxs = new Set();
     for (let i = 0; i < n; i += step) labelIdxs.add(i);
     labelIdxs.add(n - 1);
@@ -1263,8 +1578,8 @@
     });
 
     ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
-    ctx.lineJoin = 'round';
+    ctx.lineWidth   = 2;
+    ctx.lineJoin    = 'round';
     ctx.beginPath();
     points.forEach((p, i) => {
       i === 0 ? ctx.moveTo(toX(i), toY(p.y)) : ctx.lineTo(toX(i), toY(p.y));
@@ -1299,8 +1614,8 @@
   // ── Banner ──────────────────────────────────────────────────────────────────
   function showBanner(msg, type) {
     const b = document.getElementById('banner');
-    b.textContent = msg;
-    b.className = 'banner banner-' + type;
+    b.textContent   = msg;
+    b.className     = 'banner banner-' + type;
     b.style.display = 'block';
     if (type !== 'error') setTimeout(() => { b.style.display = 'none'; }, 5000);
   }
