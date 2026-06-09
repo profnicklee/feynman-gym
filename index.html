@@ -1086,10 +1086,6 @@
     if (!isTimed) {
       const unit  = getUnit(ex.name);
       const wtRaw = Number(row.querySelector('.input-weight').value);
-      if (!wtRaw) {
-        showBanner('Enter weight before logging this set.', 'warn');
-        return;
-      }
       weightKg = unit === 'lbs' ? roundHalf(wtRaw * 0.453592) : wtRaw;
     }
 
@@ -1274,10 +1270,6 @@
       const activeBtn = unitToggleEl.querySelector('.unit-btn.active');
       const unit      = activeBtn ? activeBtn.textContent : 'kg';
       const wtRaw     = Number(row.querySelector('.input-weight').value);
-      if (!wtRaw) {
-        showBanner('Enter weight before logging this set.', 'warn');
-        return;
-      }
       weightKg = unit === 'lbs' ? roundHalf(wtRaw * 0.453592) : wtRaw;
     }
 
